@@ -13,11 +13,13 @@ const CACHE = `mol-bhav-meter-${VERSION}`;
 const FILES = ['__FILES__'];
 
 // First visit: save every file the app needs.
+// { cache: 'reload' } means "fetch a fresh copy, ignore what the browser already has".
+// Without it a new version could save last week's page next to this week's code.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(FILES))
+      .then((cache) => cache.addAll(FILES.map((file) => new Request(file, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -44,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || !sameSite) return;
 
   if (request.mode === 'navigate') {
-    // The page itself: ask the network first so you always get the newest version.
+    // The page itself: ask the network first, so an update shows up as soon as the host serves it.
     // No signal? Hand back the saved copy.
     event.respondWith(fetch(request).catch(() => caches.match('./')));
     return;

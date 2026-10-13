@@ -11,6 +11,11 @@
   box-sizing: border-box;
 }
 
+/* A text box needs an edge you can see: 3:1 against its background. The brand's --line-2 is for quiet dividers. */
+:root {
+  --field-line: rgba(237, 232, 221, 0.42);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   background: var(--ground);
@@ -184,7 +189,7 @@ main {
   /* "main >" makes this rule win over the plain .cluster rule further down. */
   main > .cluster {
     grid-column: 1;
-    grid-row: 1 / span 3;
+    grid-row: 1 / span 4;
     position: sticky;
     top: 20px;
     margin: 20px 0 0;
@@ -205,8 +210,9 @@ main {
     grid-row: 3;
   }
 
+  /* Same column as the paperwork. In the full-width row below, the pinned panel slid over it. */
   .math {
-    grid-column: 1 / -1;
+    grid-column: 2;
     grid-row: 4;
   }
 }
@@ -363,7 +369,7 @@ input[type='number']::-webkit-inner-spin-button {
   width: 3.4em;
   min-height: 40px;
   padding: 0 10px;
-  border: 1px solid var(--line-2);
+  border: 1px solid var(--field-line);
   border-radius: 10px;
   background: var(--panel-2);
   color: var(--chalk);
@@ -371,8 +377,9 @@ input[type='number']::-webkit-inner-spin-button {
   text-align: right;
 }
 
+/* Still editable, just quieter: the rate isn't changing the answer right now. */
 .rate[data-quiet] {
-  opacity: 0.45;
+  opacity: 0.68;
 }
 
 /* the dial itself: see src/ui/dial.ts for the drawing */
@@ -642,7 +649,7 @@ input[type='number']::-webkit-inner-spin-button {
 .money {
   width: 100%;
   min-height: 48px;
-  border: 1px solid var(--line-2);
+  border: 1px solid var(--field-line);
   border-radius: 10px;
   background: var(--panel);
   color: var(--chalk);
@@ -767,11 +774,6 @@ input[type='number']::-webkit-inner-spin-button {
   color: var(--muted);
 }
 
-.order-line b {
-  color: var(--chalk);
-  font-weight: 600;
-}
-
 .summary {
   margin: 0;
   padding: 14px 16px;
@@ -828,11 +830,32 @@ input[type='number']::-webkit-inner-spin-button {
   color: #fff;
 }
 
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
 .toast {
   min-height: 1.5em;
   margin: 10px 0 0;
   font-size: 14.5px;
   color: var(--go);
+}
+
+/* Appears only when the browser refuses to copy: the text, selected, ready for a long-press. */
+.copy-fallback {
+  display: block;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--chalk);
+  font: 13.5px/1.5 var(--mono);
+  resize: vertical;
 }
 
 .text-button {

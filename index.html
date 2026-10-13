@@ -6,7 +6,7 @@
     <title>Mol-Bhav Meter</title>
     <meta
       name="description"
-      content="Type a vendor's price. Get one word back: great deal, bargain, or walk away. Free, works offline, and nothing leaves your phone."
+      content="Type a vendor's price. Get a straight answer: great deal, bargain, or walk away. Free, works offline, no account."
     />
     <meta name="theme-color" content="#111214" />
     <meta name="color-scheme" content="dark" />
@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Mol-Bhav Meter" />
-    <meta property="og:description" content="Vendor says a price. You get one word back: great deal, bargain, or walk away." />
+    <meta property="og:description" content="A vendor says a price. You get a straight answer: great deal, bargain, or walk away." />
     <meta property="og:image" content="%SITE_URL%/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <script type="module" src="/src/main.ts"></script>
@@ -37,13 +37,11 @@
     <main>
       <div class="intro" data-chrome>
         <h1>Mol-Bhav Meter</h1>
-        <p class="lede">Type the vendor's price. Get one word back: great deal, bargain, or walk away.</p>
+        <p class="lede">Type the vendor's price. Get a straight answer: great deal, bargain, or walk away.</p>
         <p class="aside"><span lang="hi">मोल-भाव</span> (mol-bhav) is Hindi for haggling.</p>
       </div>
 
-      <p class="example-note" id="example-note" hidden>
-        These are example numbers: a brass diya set of 6 that sells for ₹1,999. Change any of them.
-      </p>
+      <p class="example-note" id="example-note" hidden></p>
 
       <section class="cluster" id="cluster" data-verdict="idle" aria-labelledby="cluster-h">
           <h2 class="vh" id="cluster-h">The meter</h2>
@@ -57,13 +55,22 @@
           </div>
 
           <div class="taxline">
-            <div class="seg" role="group" aria-label="Is tax included in his price?">
+            <div class="seg" role="group" aria-label="Is tax included in the vendor's price?">
               <button type="button" data-incl="0" aria-pressed="true">Plus tax</button>
               <button type="button" data-incl="1" aria-pressed="false">Tax included</button>
             </div>
             <label class="rate" for="vtax">
-              <span>at</span>
-              <input id="vtax" type="number" inputmode="decimal" min="0" max="100" step="any" autocomplete="off" />
+              <span aria-hidden="true">at</span>
+              <input
+                id="vtax"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                max="100"
+                step="any"
+                autocomplete="off"
+                aria-label="Vendor's tax rate, percent"
+              />
               <span>%</span>
             </label>
           </div>
@@ -95,7 +102,7 @@
 
         <div class="sheet">
           <section aria-labelledby="h-offer">
-            <h2 id="h-offer">The rest of his offer</h2>
+            <h2 id="h-offer">The rest of the offer</h2>
             <div class="row">
               <div class="field">
                 <label for="delivery">Delivery for the whole order</label>
@@ -210,6 +217,7 @@
               <button type="button" class="btn btn-ghost" id="copy-link">Copy link</button>
             </div>
             <p class="toast" id="toast" role="status"></p>
+            <textarea class="copy-fallback" id="copy-fallback" rows="4" readonly hidden aria-label="Text to copy"></textarea>
             <button type="button" class="text-button" id="reset">Start over with the example</button>
           </section>
         </div>
@@ -221,12 +229,16 @@
         </p>
         <p>
           That is the most one product can cost you and still leave the profit you asked for. A great deal is a
-          cost at or under 75% of it. The meter then adds tax and a share of delivery to the vendor's price and
-          sees which side of each line he lands on.
+          cost at or under <span id="great-share">75%</span> of it. The meter then adds tax and a share of delivery
+          to the vendor's price and sees which side of each line it lands on.
         </p>
         <p>
-          Everything runs on your phone. Nothing you type is sent anywhere, and once the page has loaded it works
-          with no signal.
+          Everything runs on your phone. There is no server and no account, and once the page has loaded it works
+          with no signal. A link you share carries the numbers inside the link itself.
+        </p>
+        <p>
+          This is a calculator, not tax advice. You type the rates, so check them for your product and your
+          country.
         </p>
       </section>
     </main>

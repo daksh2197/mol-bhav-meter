@@ -1,7 +1,7 @@
 {
   "name": "mol-bhav-meter",
   "version": "1.0.0",
-  "description": "Type a vendor's quote, get one word back: great deal, bargain, or walk away.",
+  "description": "Type a vendor's price, get a straight answer: great deal, bargain, or walk away.",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "url": "https://github.com/GITHUB_USERNAME/mol-bhav-meter"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "vite",

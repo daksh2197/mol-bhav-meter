@@ -1,9 +1,12 @@
-# Every push to GitHub runs this file on a fresh computer in GitHub's cloud.
+# Every push to main and every pull request runs this file on a fresh computer in GitHub's cloud.
 #
-#   1. test    - install, run the 53 tests, build the app
+#   1. test    - install, run the tests, build the app
 #   2. deploy  - only on the main branch, and only if step 1 passed: put the build on the internet
 #
 # If a test fails, nothing ships. That is the whole point.
+#
+# One-time setup: repo Settings > Pages > Source must be "GitHub Actions",
+# or the "Ask GitHub where this site will live" step fails.
 
 name: Test and ship
 
@@ -25,6 +28,9 @@ jobs:
   test:
     name: Test and build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v7
 

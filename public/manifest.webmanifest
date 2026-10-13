@@ -1,7 +1,7 @@
 {
   "name": "Mol-Bhav Meter",
   "short_name": "Mol-Bhav",
-  "description": "Type a vendor's price. Get one word back: great deal, bargain, or walk away.",
+  "description": "Type a vendor's price. Get a straight answer: great deal, bargain, or walk away.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

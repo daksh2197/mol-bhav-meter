@@ -3,7 +3,7 @@
  * from Google. Two reasons: the meter has to work with no signal, and nobody's
  * phone should be calling a third party just to draw letters.
  *
- * Only the Latin files are included. ₹ lives in the "latin-ext" file.
+ * Only the Latin and Latin Extended files are included. ₹ lives in the "latin-ext" one.
  */
 
 @font-face {

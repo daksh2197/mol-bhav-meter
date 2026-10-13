@@ -1,10 +1,11 @@
 /**
  * The wiring. This file reads the form, hands the numbers to the brain
- * (core/meter.ts), and paints the answer on screen. It makes no decisions itself.
+ * (core/meter.ts), asks core/words.ts what to say, and paints the answer.
+ * It does no math and writes no sentences of its own.
  *
  *   form  ->  readForm()  ->  judge()  ->  render()  ->  screen
  *
- * Every keystroke runs that whole line again. It takes well under a millisecond,
+ * Every keystroke runs that whole line again. It takes about a millisecond,
  * so there is no "Calculate" button.
  */
 
@@ -14,8 +15,23 @@ import './styles/app.css';
 
 import { decodeDeal, encodeDeal, EXAMPLE, type Deal } from './core/deal';
 import { CURRENCIES, isCurrency, money, percent, symbol } from './core/format';
-import { judge, type Result } from './core/meter';
-import { advice, askable, sayingFor, summary, VERDICT_TITLE } from './core/words';
+import { GREAT_FRACTION, judge } from './core/meter';
+import {
+  advice,
+  dialDescription,
+  exampleNote,
+  IDLE_TITLE,
+  idleAdvice,
+  ledgerRows,
+  limitRead,
+  linesFor,
+  NO_SUMMARY_YET,
+  orderLine,
+  sayingFor,
+  summary,
+  TOAST,
+  VERDICT_TITLE,
+} from './core/words';
 import { mountDial } from './ui/dial';
 
 const STORAGE_KEY = 'mol-bhav-meter:v1';
@@ -30,14 +46,22 @@ function el<T extends HTMLElement>(id: string): T {
 
 const input = (id: string): HTMLInputElement => el<HTMLInputElement>(id);
 
-/** What is typed in a number box, as a number. Blank or nonsense counts as 0. */
+/** What is typed in a number box, as a number. Blank, negative or nonsense counts as 0. */
 function numberIn(id: string): number {
   const value = parseFloat(input(id).value);
-  return Number.isFinite(value) ? value : 0;
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 /** Show a number in a box without float crumbs like 4.720000000000001. */
 const tidy = (n: number): string => String(Math.round(n * 1e4) / 1e4);
+
+/**
+ * Change text only when it is different. Screen readers announce every change
+ * inside a live region, so rewriting the same words would make them repeat themselves.
+ */
+function setText(target: HTMLElement, text: string): void {
+  if (target.textContent !== text) target.textContent = text;
+}
 
 // Storage can be switched off (private windows, embeds). The meter must work anyway.
 function remember(deal: Deal): void {
@@ -119,40 +143,12 @@ const cluster = el('cluster');
 const verdictWord = el('verdict');
 let shownVerdict = '';
 
+/**
+ * The deal goes after the "#". Browsers keep that part to themselves: it is never
+ * sent to the server, so a shared link tells GitHub nothing about anyone's prices.
+ */
 function shareLink(deal: Deal): string {
-  return `${location.origin}${location.pathname}?${encodeDeal(deal)}`;
-}
-
-function ledgerRows(deal: Deal, result: Result): Array<[label: string, amount: number]> {
-  const { shop } = deal;
-  const pieces = shop.piecesPerProduct;
-  const rows: Array<[string, number]> = [['Customer pays', shop.sellingPrice]];
-  if (result.taxOnSale > 0) rows.push(['Sales tax you pass on', -result.taxOnSale]);
-  rows.push(
-    ['Payment and store fees', -result.fees],
-    ['Shipping', -shop.shippingPerSale],
-    ['Packing', -shop.packingPerSale],
-    [
-      `Vendor: ${pieces} ${pieces === 1 ? 'piece' : 'pieces'} at ${money(result.landedPerPiece, deal.currency)} landed`,
-      -result.costPerProduct,
-    ],
-    ['Profit', result.profitPerSale],
-  );
-  return rows;
-}
-
-function orderLine(deal: Deal, result: Result): string {
-  const cash = (n: number): string => money(n, deal.currency);
-  const made = result.productsFromOrder;
-  if (made === 0) {
-    return `This order is too small to make one product. You need at least <b>${deal.shop.piecesPerProduct} pieces</b>.`;
-  }
-  const leftover =
-    result.leftoverPieces > 0
-      ? `, with ${result.leftoverPieces} ${result.leftoverPieces === 1 ? 'piece' : 'pieces'} left over`
-      : '';
-  const outcome = result.orderProfit >= 0 ? 'you keep' : 'you lose';
-  return `This order makes <b>${made} ${made === 1 ? 'product' : 'products'}</b>${leftover}. If they all sell, ${outcome} <b>${cash(Math.abs(result.orderProfit))}</b>.`;
+  return `${location.origin}${location.pathname}#${encodeDeal(deal)}`;
 }
 
 function render(deal: Deal): void {
@@ -161,12 +157,11 @@ function render(deal: Deal): void {
   const cash = (n: number): string => money(n, currency);
   const ready = offer.pricePerPiece > 0 && shop.sellingPrice > 0;
   const state = ready ? result.verdict : 'idle';
-  const hasLines = !result.impossible && result.walkAwayQuote > 0;
+  const lines = linesFor(result);
 
   // The instrument.
   cluster.dataset.verdict = state;
-  const title = ready ? VERDICT_TITLE[result.verdict] : 'Type his price';
-  verdictWord.textContent = title;
+  setText(verdictWord, ready ? VERDICT_TITLE[result.verdict] : IDLE_TITLE);
   if (ready && shownVerdict && shownVerdict !== state) {
     verdictWord.classList.remove('pop');
     void verdictWord.offsetWidth; // restart the animation
@@ -175,62 +170,45 @@ function render(deal: Deal): void {
   shownVerdict = state;
 
   const [saying, meaning] = sayingFor(result.verdict, offer);
-  el('saying').textContent = saying;
-  el('saying-meaning').textContent = meaning;
+  setText(el('saying'), saying);
+  setText(el('saying-meaning'), meaning);
+  setText(el('advice'), ready ? advice(result, offer, currency) : idleAdvice(result, shop, offer, currency));
 
-  if (ready) {
-    el('advice').textContent = advice(result, offer, currency);
-  } else if (shop.sellingPrice <= 0) {
-    el('advice').textContent = 'Add your selling price below, then type what the vendor quoted.';
-  } else if (hasLines) {
-    el('advice').textContent = `Before he says a number: great is ${cash(askable(result.greatQuote))} a piece or less. Over ${cash(askable(result.walkAwayQuote))}, you walk.`;
-  } else {
-    el('advice').textContent = advice(result, offer, currency);
-  }
-
-  // The needle stops at the end of the dial, but the number under it tells the whole truth.
-  const share = result.impossible ? '' : `${Math.round((result.costPerProduct / result.walkAwayCost) * 100)}% of your limit`;
   dial.set({
     load: result.load,
     verdict: state,
-    greatPrice: hasLines && result.greatQuote > 0 ? cash(askable(result.greatQuote)) : '',
-    walkPrice: hasLines ? cash(askable(result.walkAwayQuote)) : '',
-    read: ready ? share : '',
-    description: ready
-      ? `Deal meter: ${title}. ${share ? `His price puts your cost at ${share}.` : ''}`
-      : 'Deal meter. Waiting for the vendor price.',
+    greatPrice: lines && lines.great > 0 ? cash(lines.great) : '',
+    walkPrice: lines ? cash(lines.walk) : '',
+    read: ready ? limitRead(result) : '',
+    description: dialDescription(result, ready),
   });
 
-  const profit = el('stat-profit');
-  const marginStat = el('stat-margin');
-  if (ready) {
-    // Green means "you hit your target", not just "above zero". Orange means you lose money.
-    const tone = result.profitPerSale < 0 ? 'down' : result.margin >= shop.targetMargin ? 'up' : '';
-    profit.textContent = cash(result.profitPerSale);
-    profit.className = tone;
-    marginStat.textContent = percent(result.margin);
-    marginStat.className = tone;
-    el('stat-cost').textContent = cash(result.costPerProduct);
-  } else {
-    for (const stat of [profit, marginStat, el('stat-cost')]) {
-      stat.textContent = '–';
-      stat.className = '';
-    }
+  // Green means "you hit your target", not just "above zero". Orange means you lose money.
+  const tone = !ready ? '' : result.profitPerSale < 0 ? 'down' : result.margin >= shop.targetMargin ? 'up' : '';
+  const stats: Array<[id: string, text: string, tone: string]> = [
+    ['stat-profit', ready ? cash(result.profitPerSale) : '–', tone],
+    ['stat-margin', ready ? percent(result.margin) : '–', tone],
+    ['stat-cost', ready ? cash(result.costPerProduct) : '–', ''],
+  ];
+  for (const [id, text, className] of stats) {
+    setText(el(id), text);
+    el(id).className = className;
   }
 
-  // The vendor tax rate only matters when it changes what you pay.
-  const rateMatters = !offer.taxIncluded || shop.reclaimVendorTax;
+  // The vendor's tax rate only changes the answer in two cases: "plus tax" when the tax
+  // doesn't come back to you, and "tax included" when it does. Otherwise dim the box.
+  const rateMatters = offer.taxIncluded === shop.reclaimVendorTax;
   el('vtax').closest('.rate')?.toggleAttribute('data-quiet', !rateMatters);
 
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-incl]')) {
     button.setAttribute('aria-pressed', String((button.dataset.incl === '1') === offer.taxIncluded));
   }
   for (const slot of document.querySelectorAll<HTMLElement>('[data-symbol]')) {
-    slot.textContent = symbol(currency);
+    setText(slot, symbol(currency));
   }
 
   // The paperwork.
-  const rows = ledgerRows(deal, result);
+  const rows = ledgerRows(shop, result, currency, ready);
   el('ledger').replaceChildren(
     ...rows.map(([label, amount], index) => {
       const row = document.createElement('tr');
@@ -240,36 +218,51 @@ function render(deal: Deal): void {
       name.textContent = label;
       const value = document.createElement('td');
       value.textContent = cash(amount);
-      if (isTotal) value.className = amount >= 0 ? 'up' : 'down';
+      if (isTotal && ready) value.className = amount >= 0 ? 'up' : 'down';
       row.append(name, value);
       return row;
     }),
   );
-  el('order-line').innerHTML = orderLine(deal, result);
+  setText(el('order-line'), orderLine(shop, result, currency, ready));
 
+  // Sharing only makes sense once there is a deal to share.
   const link = shareLink(deal);
-  const text = summary(deal.name, shop, offer, result, currency, link);
-  el('summary').textContent = summary(deal.name, shop, offer, result, currency);
-  el<HTMLAnchorElement>('whatsapp').href = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  el('copy-summary').dataset.text = text;
-  el('copy-link').dataset.text = link;
+  setText(el('summary'), ready ? summary(deal.name, shop, offer, result, currency) : NO_SUMMARY_YET);
+  const whatsapp = el<HTMLAnchorElement>('whatsapp');
+  const sendable = ready ? summary(deal.name, shop, offer, result, currency, link) : '';
+  if (ready) {
+    whatsapp.href = `https://wa.me/?text=${encodeURIComponent(sendable)}`;
+    whatsapp.removeAttribute('aria-disabled');
+    whatsapp.removeAttribute('tabindex');
+  } else {
+    whatsapp.removeAttribute('href');
+    whatsapp.setAttribute('aria-disabled', 'true');
+    whatsapp.setAttribute('tabindex', '-1');
+  }
+  const copySummary = el<HTMLButtonElement>('copy-summary');
+  const copyLink = el<HTMLButtonElement>('copy-link');
+  copySummary.disabled = !ready;
+  copyLink.disabled = !ready;
+  copySummary.dataset.text = sendable;
+  copyLink.dataset.text = link;
 }
 
 // ---------- copy buttons ----------
 
 async function copy(text: string, done: string): Promise<void> {
-  const toast = el('toast');
+  const fallback = el<HTMLTextAreaElement>('copy-fallback');
+  fallback.hidden = true;
   try {
     await navigator.clipboard.writeText(text);
-    toast.textContent = done;
+    setText(el('toast'), done);
   } catch {
-    // Older phones and locked-down embeds: select the text so a long-press can copy it.
-    const range = document.createRange();
-    range.selectNodeContents(el('summary'));
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-    toast.textContent = 'Could not copy on its own. The summary is selected: press and hold, then Copy.';
+    // Older phones and locked-down embeds refuse to copy. Show exactly what was asked for,
+    // selected, so a long-press can do it by hand.
+    fallback.value = text;
+    fallback.hidden = false;
+    fallback.focus();
+    fallback.select();
+    setText(el('toast'), TOAST.copyBlocked);
   }
 }
 
@@ -283,30 +276,43 @@ function start(): void {
   for (const [code, { label }] of Object.entries(CURRENCIES)) {
     select.add(new Option(label, code));
   }
+  setText(el('great-share'), percent(GREAT_FRACTION));
+
+  const note = el('example-note');
+  const showExample = (showing: boolean): void => {
+    setText(note, exampleNote(EXAMPLE));
+    note.hidden = !showing;
+  };
+
+  /** A shared link has the deal after the "#". Take it, then tidy the address bar. */
+  const takeDealFromLink = (): Deal | null => {
+    const shared = decodeDeal(location.hash.slice(1));
+    if (shared) {
+      remember(shared);
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    return shared;
+  };
 
   // Where do the opening numbers come from? A shared link wins, then your last visit, then the example.
-  const fromLink = decodeDeal(location.search);
-  const fromLastVisit = fromLink ? null : recall();
-  const opening = fromLink ?? fromLastVisit ?? EXAMPLE;
+  const opening = takeDealFromLink() ?? recall() ?? EXAMPLE;
   fillForm(opening);
-  el('example-note').hidden = opening !== EXAMPLE;
-
-  if (fromLink) {
-    // Keep the address bar clean once the link has done its job.
-    remember(fromLink);
-    history.replaceState(null, '', location.pathname + (query.has('embed') ? '?embed=1' : ''));
-  }
+  showExample(opening === EXAMPLE);
 
   const onEdit = (): void => {
     const deal = readForm();
-    el('example-note').hidden = true;
-    el('toast').textContent = '';
+    showExample(false);
+    setText(el('toast'), '');
+    el('copy-fallback').hidden = true;
     remember(deal);
     render(deal);
   };
 
-  document.addEventListener('input', onEdit);
-  document.addEventListener('change', onEdit);
+  // "input" fires for every kind of control here: typing, the checkbox and the currency menu.
+  // The copy box is ours, not part of the deal, so edits there are ignored.
+  document.addEventListener('input', (event) => {
+    if ((event.target as HTMLElement).id !== 'copy-fallback') onEdit();
+  });
 
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-incl]')) {
     button.addEventListener('click', () => {
@@ -316,18 +322,28 @@ function start(): void {
   }
 
   el('copy-summary').addEventListener('click', (event) => {
-    void copy((event.currentTarget as HTMLElement).dataset.text ?? '', 'Summary copied.');
+    void copy((event.currentTarget as HTMLElement).dataset.text ?? '', TOAST.summaryCopied);
   });
   el('copy-link').addEventListener('click', (event) => {
-    void copy((event.currentTarget as HTMLElement).dataset.text ?? '', 'Link copied.');
+    void copy((event.currentTarget as HTMLElement).dataset.text ?? '', TOAST.linkCopied);
   });
   el('reset').addEventListener('click', () => {
     forget();
     fillForm(EXAMPLE);
-    el('example-note').hidden = false;
-    el('toast').textContent = '';
+    showExample(true);
+    setText(el('toast'), '');
+    el('copy-fallback').hidden = true;
     render(EXAMPLE);
     input('quote').focus();
+  });
+
+  // Someone pastes a shared link into a tab that already has the meter open.
+  window.addEventListener('hashchange', () => {
+    const shared = takeDealFromLink();
+    if (!shared) return;
+    fillForm(shared);
+    showExample(false);
+    render(readForm());
   });
 
   render(readForm());
