@@ -2,9 +2,9 @@
 
 **A vendor says a price. You get a straight answer: great deal, bargain, or walk away.**
 
-[**Try it live**](https://GITHUB_USERNAME.github.io/mol-bhav-meter/) on any phone. Free, no sign-up, works with no signal.
+[**Try it live**](https://daksh2197.github.io/mol-bhav-meter/) on any phone. Free, no sign-up, works with no signal.
 
-[![Test and ship](https://github.com/GITHUB_USERNAME/mol-bhav-meter/actions/workflows/ship.yml/badge.svg)](https://github.com/GITHUB_USERNAME/mol-bhav-meter/actions/workflows/ship.yml)
+[![Test and ship](https://github.com/daksh2197/mol-bhav-meter/actions/workflows/ship.yml/badge.svg)](https://github.com/daksh2197/mol-bhav-meter/actions/workflows/ship.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-FF5A1F.svg)](LICENSE)
 
 <p align="center">
@@ -68,7 +68,7 @@ The long version, with all four tax cases, is in [docs/THE-MATH.md](docs/THE-MAT
 You need [Node.js](https://nodejs.org) 22.12 or newer.
 
 ```bash
-git clone https://github.com/GITHUB_USERNAME/mol-bhav-meter.git
+git clone https://github.com/daksh2197/mol-bhav-meter.git
 cd mol-bhav-meter
 npm install
 npm run dev     # the app, live-reloading, at http://localhost:5173
@@ -125,7 +125,7 @@ I build with Claude as my pair programmer. I bring the problem and decide what t
 - [ ] Import mode: customs duty and currency conversion
 - [ ] A light theme for bright sun
 
-Ideas and pull requests are welcome. If you sell something and the meter gets your numbers wrong, [open an issue](https://github.com/GITHUB_USERNAME/mol-bhav-meter/issues) with the deal link. That's the fastest way to get it fixed.
+Ideas and pull requests are welcome. If you sell something and the meter gets your numbers wrong, [open an issue](https://github.com/daksh2197/mol-bhav-meter/issues) with the deal link. That's the fastest way to get it fixed.
 
 ## License
 

@@ -5,8 +5,9 @@
 #
 # If a test fails, nothing ships. That is the whole point.
 #
-# One-time setup: repo Settings > Pages > Source must be "GitHub Actions",
-# or the "Ask GitHub where this site will live" step fails.
+# While the repo is private, only the tests and the build run. The deploy steps are skipped.
+# The day the repo goes public, set Settings > Pages > Source to "GitHub Actions" and
+# run this workflow once from the Actions tab. From then on every push to main deploys.
 
 name: Test and ship
 
@@ -47,7 +48,7 @@ jobs:
 
       - name: Ask GitHub where this site will live
         id: pages
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && !github.event.repository.private
         uses: actions/configure-pages@v6
 
       - name: Build
@@ -57,7 +58,7 @@ jobs:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
 
       - name: Hand the build to the deploy job
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && !github.event.repository.private
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
@@ -65,7 +66,7 @@ jobs:
   deploy:
     name: Put it on the internet
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !github.event.repository.private
     runs-on: ubuntu-latest
     permissions:
       pages: write
