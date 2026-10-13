@@ -18,13 +18,15 @@ export const isCurrency = (code: string): code is CurrencyCode => Object.hasOwn(
 
 /**
  * ₹1,999 and ₹54.31, never ₹54.3 or ₹1,999.00.
- * Small amounts with paise or cents keep two decimals. Everything else is whole.
+ * Whole amounts show no decimals. Rupees from a thousand up are rounded to the rupee,
+ * because nobody reads the paise on ₹18,798. Dollars, pounds, euros and dirhams keep their cents.
  */
 export function money(amount: number, code: CurrencyCode): string {
   const value = Number.isFinite(amount) ? amount : 0;
-  const rounded = Math.round(value * 100) / 100;
-  const showDecimals = Math.abs(rounded) < 1000 && !Number.isInteger(rounded);
-  const digits = showDecimals ? 2 : 0;
+  // "|| 0" turns negative zero into plain zero, so a zero cost never prints as "−₹0".
+  const rounded = Math.round(value * 100) / 100 || 0;
+  const whole = Number.isInteger(rounded) || (code === 'INR' && Math.abs(rounded) >= 1000);
+  const digits = whole ? 0 : 2;
   return new Intl.NumberFormat(CURRENCIES[code].locale, {
     style: 'currency',
     currency: code,

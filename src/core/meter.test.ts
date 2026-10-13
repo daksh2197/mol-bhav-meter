@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DIAL_MAX, GREAT_FRACTION, judge, taxMultiplier, type Offer, type Shop } from './meter';
+import { EXAMPLE } from './deal';
+import { DIAL_MAX, GREAT_FRACTION, judge, SHARE_MAX, taxMultiplier, type Offer, type Shop } from './meter';
 
 /**
- * The worked example these tests lean on: a brass diya set of 6, sold at ₹1,999.
+ * The shop these tests lean on: a brass diya set of 6, sold at ₹1,999,
+ * run by someone who can't claim vendor tax back yet.
  *
  *   ₹1,999 / 1.18           = ₹1,694.07 after sales tax
  *   x 50% profit target     =   ₹847.03 left for everything else
@@ -31,7 +33,7 @@ const sixtyPlusTax: Offer = {
   piecesOrdered: 120,
 };
 
-describe('the worked example', () => {
+describe('a shop that cannot claim vendor tax back, quoted ₹60 plus 18%', () => {
   const r = judge(diyaSet, sixtyPlusTax);
 
   it('finds the walk-away and great-deal cost for the set', () => {
@@ -62,6 +64,36 @@ describe('the worked example', () => {
     expect(r.productsFromOrder).toBe(20);
     expect(r.leftoverPieces).toBe(0);
     expect(r.orderProfit).toBeCloseTo(20 * r.profitPerSale, 6);
+  });
+});
+
+describe('the example the page opens with: a tax-registered shop, quoted ₹72 plus tax', () => {
+  const r = judge(EXAMPLE.shop, EXAMPLE.offer);
+
+  it('leaves the vendor tax out, because it comes back', () => {
+    // 72 + 300 / 120 delivery = 74.50 a piece, 447 for the set of 6
+    expect(r.landedPerPiece).toBeCloseTo(74.5, 9);
+    expect(r.costPerProduct).toBeCloseTo(447, 9);
+  });
+
+  it('is a bargain at 84% of the limit', () => {
+    expect(r.verdict).toBe('bargain');
+    expect(r.shareOfLimit).toBeCloseTo(0.8392, 4);
+    expect(r.profitPerSale).toBeCloseTo(932.715, 3);
+    expect(r.margin).toBeCloseTo(0.5506, 4);
+  });
+
+  it('says ask for 64, stop at 86', () => {
+    expect(r.greatQuote).toBeCloseTo(64.085, 3);
+    expect(r.walkAwayQuote).toBeCloseTo(86.28, 3);
+  });
+
+  it('would sit right under the redline for a shop that cannot reclaim the tax', () => {
+    const unregistered = judge({ ...EXAMPLE.shop, reclaimVendorTax: false }, EXAMPLE.offer);
+    // 72 x 1.18 + 2.50 = 87.46 a piece, 524.76 for the set, against a limit of 532.68
+    expect(unregistered.costPerProduct).toBeCloseTo(524.76, 2);
+    expect(unregistered.verdict).toBe('bargain');
+    expect(unregistered.shareOfLimit).toBeGreaterThan(0.98);
   });
 });
 
@@ -136,6 +168,13 @@ describe('the dial', () => {
   it(`stops at ${DIAL_MAX} no matter how bad the quote is`, () => {
     expect(judge(diyaSet, { ...sixtyPlusTax, pricePerPiece: 99999 }).load).toBe(DIAL_MAX);
   });
+
+  it('keeps the true share of the limit for the number under the needle', () => {
+    // ₹125 plus tax is 900 for the set, 169% of the 532.68 limit. The needle stops at 150%; the number does not.
+    const r = judge(diyaSet, { ...sixtyPlusTax, pricePerPiece: 125 });
+    expect(r.load).toBe(DIAL_MAX);
+    expect(r.shareOfLimit).toBeCloseTo(1.6896, 4);
+  });
 });
 
 describe('bad input does not crash it', () => {
@@ -156,6 +195,31 @@ describe('bad input does not crash it', () => {
       if (typeof value === 'number') expect(Number.isFinite(value)).toBe(true);
     }
     expect(r.costPerProduct).toBe(0);
+  });
+
+  it('calls a limit of a few float crumbs what it is: zero', () => {
+    // 113 / 1.13 x 0.5 - 50 should be exactly 0. In floating point it is 0.000000000000007.
+    const crumbs: Shop = {
+      sellingPrice: 113,
+      piecesPerProduct: 1,
+      salesTaxRate: 0.13,
+      feeRate: 0,
+      shippingPerSale: 50,
+      packingPerSale: 0,
+      targetMargin: 0.5,
+      reclaimVendorTax: false,
+    };
+    const r = judge(crumbs, sixtyPlusTax);
+    expect(r.walkAwayCost).toBe(0);
+    expect(r.impossible).toBe(true);
+    expect(r.shareOfLimit).toBe(SHARE_MAX);
+  });
+
+  it('stays finite when someone types a number with 300 zeros', () => {
+    const r = judge({ ...diyaSet, sellingPrice: 1e308 }, { ...sixtyPlusTax, pricePerPiece: 1e308, piecesOrdered: 1e308 });
+    for (const value of Object.values(r)) {
+      if (typeof value === 'number') expect(Number.isFinite(value)).toBe(true);
+    }
   });
 
   it('survives a zero selling price', () => {

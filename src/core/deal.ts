@@ -4,6 +4,9 @@
  * This file turns a deal into a short piece of text and back again. That one trick
  * does two jobs: it is how the page remembers your numbers between visits, and it is
  * how "Copy link" shares the exact same deal with someone else. No server, no account.
+ *
+ * In a link the text goes after the "#". Browsers never send that part to the server,
+ * so the numbers travel from one person to the other and nowhere else.
  */
 
 import { isCurrency, type CurrencyCode } from './format';
@@ -28,10 +31,10 @@ export const EXAMPLE: Deal = {
     shippingPerSale: 100,
     packingPerSale: 120,
     targetMargin: 0.5,
-    reclaimVendorTax: false,
+    reclaimVendorTax: true,
   },
   offer: {
-    pricePerPiece: 60,
+    pricePerPiece: 72,
     taxIncluded: false,
     vendorTaxRate: 0.18,
     deliveryForOrder: 300,
@@ -44,6 +47,9 @@ export const EXAMPLE: Deal = {
 // and comes back as exactly 9.975% instead of 9.975000000000001%.
 const toPercent = (fraction: number): number => Math.round(fraction * 1e6) / 1e4;
 const fromPercent = (percent: number): number => Math.round(percent * 1e4) / 1e6;
+
+/** Share links and saved numbers never need more than this. Anything bigger is a typo or mischief. */
+const BIGGEST = 1e12;
 
 /** deal -> "name=Brass+diya+set+of+6&cur=INR&price=1999&..." */
 export function encodeDeal(deal: Deal): string {
@@ -82,7 +88,7 @@ export function decodeDeal(text: string): Deal | null {
     const raw = params.get(key);
     if (raw === null || raw.trim() === '') return fallback;
     const value = Number(raw);
-    return Number.isFinite(value) && value >= min ? value : fallback;
+    return Number.isFinite(value) && value >= min && value <= BIGGEST ? value : fallback;
   };
   const flag = (key: string, fallback: boolean): boolean => {
     const raw = params.get(key);

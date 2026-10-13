@@ -20,7 +20,7 @@ describe('sharing a deal as text', () => {
     const text = encodeDeal(EXAMPLE);
     expect(text).toContain('tax=18');
     expect(text).toContain('fees=4.72');
-    expect(text).toContain('quote=60');
+    expect(text).toContain('quote=72');
   });
 
   it('survives names with symbols in them', () => {
@@ -41,6 +41,11 @@ describe('sharing a deal as text', () => {
     expect(deal?.offer.piecesOrdered).toBe(EXAMPLE.offer.piecesOrdered);
     expect(deal?.currency).toBe('INR');
     expect(deal?.shop.salesTaxRate).toBe(EXAMPLE.shop.salesTaxRate);
+  });
+
+  it('ignores numbers too big to be money', () => {
+    expect(decodeDeal('quote=1e308')?.offer.pricePerPiece).toBe(EXAMPLE.offer.pricePerPiece);
+    expect(decodeDeal('quote=5&qty=Infinity')?.offer.piecesOrdered).toBe(EXAMPLE.offer.piecesOrdered);
   });
 
   it('refuses a target above 100%', () => {

@@ -29,13 +29,13 @@ export interface Shop {
   reclaimVendorTax: boolean;
 }
 
-/** The vendor's side: what he just said on the phone. */
+/** The vendor's side: what was just said on the phone. */
 export interface Offer {
-  /** His price for one piece, exactly as he quoted it. */
+  /** The vendor's price for one piece, exactly as quoted. */
   pricePerPiece: number;
-  /** True if his price already has tax in it. False if he said "plus tax". */
+  /** True if the quoted price already has tax in it. False if the vendor said "plus tax". */
   taxIncluded: boolean;
-  /** The tax rate on his bill, as a fraction. */
+  /** The tax rate on the vendor's bill, as a fraction. */
   vendorTaxRate: number;
   /** Delivery to your door for the whole order. */
   deliveryForOrder: number;
@@ -57,7 +57,7 @@ export interface Result {
   /** Payment and platform fees on one sale. */
   fees: number;
 
-  /** Real cost of one vendor piece: his price, tax you can't reclaim, and its share of delivery. */
+  /** Real cost of one vendor piece: the quoted price, tax you can't reclaim, and its share of delivery. */
   landedPerPiece: number;
   /** Vendor cost inside one product. */
   costPerProduct: number;
@@ -66,16 +66,18 @@ export interface Result {
   walkAwayCost: number;
   /** Three quarters of the walk-away cost. At or under this, book it. */
   greatCost: number;
-  /** The vendor price per piece (in his own terms) that lands exactly on the walk-away cost. */
+  /** The vendor price per piece (as the vendor quotes it) that lands exactly on the walk-away cost. */
   walkAwayQuote: number;
-  /** The vendor price per piece (in his own terms) that lands exactly on the great-deal cost. */
+  /** The vendor price per piece (as the vendor quotes it) that lands exactly on the great-deal cost. */
   greatQuote: number;
 
   profitPerSale: number;
   /** Profit as a fraction of sales after tax. */
   margin: number;
 
-  /** Cost divided by walk-away cost, capped at DIAL_MAX. 1.0 is the redline. Drives the needle. */
+  /** Cost divided by walk-away cost. 1.0 is the redline. Capped at SHARE_MAX so it is always a real number. */
+  shareOfLimit: number;
+  /** The same thing, capped at DIAL_MAX. Drives the needle, which stops at the end of the dial. */
   load: number;
 
   /** Whole products you can make from this order. */
@@ -91,11 +93,20 @@ export const GREAT_FRACTION = 0.75;
 /** The dial stops here. 1.5 means "50% over your walk-away cost". */
 export const DIAL_MAX = 1.5;
 
+/** "999 times over your limit" is as far as the share-of-limit figure goes. */
+export const SHARE_MAX = 999;
+
 /** Floating point leaves crumbs like 0.30000000000000004. This is the broom. */
 const EPSILON = 1e-9;
+/** Half the smallest coin. A walk-away cost below this is zero, whatever the crumbs say. */
+const SMALLEST_MONEY = 0.005;
+/** Nobody is haggling over a trillion. Bigger inputs are typos, and they turn into Infinity downstream. */
+const BIGGEST_MONEY = 1e12;
+const BIGGEST_COUNT = 1e9;
 
-const nonNegative = (n: number): number => (Number.isFinite(n) && n > 0 ? n : 0);
-const wholeAtLeastOne = (n: number): number => (Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1);
+const nonNegative = (n: number): number => (Number.isFinite(n) && n > 0 ? Math.min(n, BIGGEST_MONEY) : 0);
+const wholeAtLeastOne = (n: number): number =>
+  Number.isFinite(n) && n >= 1 ? Math.min(Math.floor(n), BIGGEST_COUNT) : 1;
 
 /**
  * How much of the vendor's quoted price really leaves your pocket.
@@ -123,11 +134,12 @@ export function judge(shop: Shop, offer: Offer): Result {
   const target = Math.min(nonNegative(shop.targetMargin), 1);
 
   // The two lines on the dial.
-  const walkAwayCost = Math.max(0, netSale * (1 - target) - overhead);
+  const room = netSale * (1 - target) - overhead;
+  const walkAwayCost = room < SMALLEST_MONEY ? 0 : room;
   const greatCost = walkAwayCost * GREAT_FRACTION;
-  const impossible = walkAwayCost <= 0;
+  const impossible = walkAwayCost === 0;
 
-  // His side: what one piece really costs once it is sitting in your home.
+  // The vendor's side: what one piece really costs once it is sitting in your home.
   const ordered = wholeAtLeastOne(offer.piecesOrdered);
   const deliveryShare = nonNegative(offer.deliveryForOrder) / ordered;
   const multiplier = taxMultiplier(offer, shop.reclaimVendorTax);
@@ -137,7 +149,7 @@ export function judge(shop: Shop, offer: Offer): Result {
   const profitPerSale = netSale - overhead - costPerProduct;
   const margin = netSale > 0 ? profitPerSale / netSale : 0;
 
-  // Work backwards: what would he have to quote to land on each line?
+  // Work backwards: what would the vendor have to quote to land on each line?
   const quoteFor = (costLevel: number): number => (costLevel / pieces - deliveryShare) / multiplier;
 
   let verdict: Verdict;
@@ -145,6 +157,8 @@ export function judge(shop: Shop, offer: Offer): Result {
   else if (costPerProduct <= greatCost + EPSILON) verdict = 'great';
   else if (costPerProduct <= walkAwayCost + EPSILON) verdict = 'bargain';
   else verdict = 'walk';
+
+  const shareOfLimit = impossible ? SHARE_MAX : Math.min(costPerProduct / walkAwayCost, SHARE_MAX);
 
   const productsFromOrder = Math.floor(ordered / pieces);
   const leftoverPieces = ordered - productsFromOrder * pieces;
@@ -164,7 +178,8 @@ export function judge(shop: Shop, offer: Offer): Result {
     greatQuote: quoteFor(greatCost),
     profitPerSale,
     margin,
-    load: impossible ? DIAL_MAX : Math.min(costPerProduct / walkAwayCost, DIAL_MAX),
+    shareOfLimit,
+    load: Math.min(shareOfLimit, DIAL_MAX),
     productsFromOrder,
     leftoverPieces,
     orderProfit,
