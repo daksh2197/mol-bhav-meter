@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Mol-Bhav Meter</title>
+    <meta
+      name="description"
+      content="Type a vendor's price. Get one word back: great deal, bargain, or walk away. Free, works offline, and nothing leaves your phone."
+    />
+    <meta name="theme-color" content="#111214" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Mol-Bhav Meter" />
+    <meta property="og:description" content="Vendor says a price. You get one word back: great deal, bargain, or walk away." />
+    <meta property="og:image" content="%SITE_URL%/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip" href="#quote">Skip to the meter</a>
+
+    <header class="site-head" data-chrome>
+      <a class="brand" href="https://dakshdua.ca" aria-label="Daksh Dua, dakshdua.ca">
+        <span class="brand-tile" aria-hidden="true">DD</span>
+        <span>Daksh Dua</span>
+      </a>
+      <nav class="head-links" aria-label="About this tool">
+        <a href="#math">The math</a>
+        <a href="%REPO_URL%">Source</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="intro" data-chrome>
+        <h1>Mol-Bhav Meter</h1>
+        <p class="lede">Type the vendor's price. Get one word back: great deal, bargain, or walk away.</p>
+        <p class="aside"><span lang="hi">मोल-भाव</span> (mol-bhav) is Hindi for haggling.</p>
+      </div>
+
+      <p class="example-note" id="example-note" hidden>
+        These are example numbers: a brass diya set of 6 that sells for ₹1,999. Change any of them.
+      </p>
+
+      <section class="cluster" id="cluster" data-verdict="idle" aria-labelledby="cluster-h">
+          <h2 class="vh" id="cluster-h">The meter</h2>
+
+          <div class="quote">
+            <label for="quote">Vendor's price for one piece</label>
+            <div class="readout">
+              <span class="cur" data-symbol aria-hidden="true">₹</span>
+              <input id="quote" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" placeholder="0" />
+            </div>
+          </div>
+
+          <div class="taxline">
+            <div class="seg" role="group" aria-label="Is tax included in his price?">
+              <button type="button" data-incl="0" aria-pressed="true">Plus tax</button>
+              <button type="button" data-incl="1" aria-pressed="false">Tax included</button>
+            </div>
+            <label class="rate" for="vtax">
+              <span>at</span>
+              <input id="vtax" type="number" inputmode="decimal" min="0" max="100" step="any" autocomplete="off" />
+              <span>%</span>
+            </label>
+          </div>
+
+          <div class="dial" id="dial"></div>
+
+          <div class="verdict" aria-live="polite" aria-atomic="true">
+            <p class="verdict-word" id="verdict"></p>
+            <p class="saying" id="saying"></p>
+            <p class="saying-meaning" id="saying-meaning"></p>
+            <p class="advice" id="advice"></p>
+          </div>
+
+          <dl class="stats">
+            <div>
+              <dt>Profit per sale</dt>
+              <dd id="stat-profit">–</dd>
+            </div>
+            <div>
+              <dt>Margin</dt>
+              <dd id="stat-margin">–</dd>
+            </div>
+            <div>
+              <dt>Cost per product</dt>
+              <dd id="stat-cost">–</dd>
+            </div>
+          </dl>
+        </section>
+
+        <div class="sheet">
+          <section aria-labelledby="h-offer">
+            <h2 id="h-offer">The rest of his offer</h2>
+            <div class="row">
+              <div class="field">
+                <label for="delivery">Delivery for the whole order</label>
+                <div class="money">
+                  <span data-symbol aria-hidden="true">₹</span>
+                  <input id="delivery" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="qty">Pieces you would order</label>
+                <input id="qty" type="number" inputmode="numeric" min="1" step="1" autocomplete="off" />
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="h-product">
+            <h2 id="h-product">What you sell</h2>
+            <div class="field">
+              <label for="name">Product name</label>
+              <input id="name" type="text" maxlength="80" autocomplete="off" />
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="price">Your selling price</label>
+                <div class="money">
+                  <span data-symbol aria-hidden="true">₹</span>
+                  <input id="price" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="pieces">Pieces in one product</label>
+                <input id="pieces" type="number" inputmode="numeric" min="1" step="1" autocomplete="off" />
+                <p class="hint">A set of 6 is 6. A single mug is 1.</p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="currency">Currency</label>
+              <select id="currency"></select>
+            </div>
+          </section>
+
+          <section aria-labelledby="h-costs">
+            <h2 id="h-costs">Your costs and target</h2>
+            <div class="row">
+              <div class="field">
+                <label for="target">Profit you want to keep</label>
+                <div class="money">
+                  <input id="target" type="number" inputmode="decimal" min="0" max="100" step="any" autocomplete="off" />
+                  <span aria-hidden="true">%</span>
+                </div>
+                <p class="hint">Of your sales after tax.</p>
+              </div>
+              <div class="field">
+                <label for="fees">Payment and store fees</label>
+                <div class="money">
+                  <input id="fees" type="number" inputmode="decimal" min="0" max="100" step="any" autocomplete="off" />
+                  <span aria-hidden="true">%</span>
+                </div>
+                <p class="hint">Of your selling price.</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="ship">Shipping you pay per sale</label>
+                <div class="money">
+                  <span data-symbol aria-hidden="true">₹</span>
+                  <input id="ship" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" />
+                </div>
+                <p class="hint">0 if the customer pays.</p>
+              </div>
+              <div class="field">
+                <label for="pack">Packing per sale</label>
+                <div class="money">
+                  <span data-symbol aria-hidden="true">₹</span>
+                  <input id="pack" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="tax">Sales tax inside your price</label>
+                <div class="money">
+                  <input id="tax" type="number" inputmode="decimal" min="0" max="100" step="any" autocomplete="off" />
+                  <span aria-hidden="true">%</span>
+                </div>
+                <p class="hint">0 if you don't charge tax.</p>
+              </div>
+            </div>
+            <label class="check" for="reclaim">
+              <input id="reclaim" type="checkbox" />
+              <span>I'm tax-registered, so the tax on the vendor's bill comes back to me.</span>
+            </label>
+          </section>
+
+          <section aria-labelledby="h-ledger">
+            <h2 id="h-ledger">Where the money goes</h2>
+            <table class="ledger">
+              <caption class="vh">
+                One sale, line by line
+              </caption>
+              <tbody id="ledger"></tbody>
+            </table>
+            <p class="order-line" id="order-line"></p>
+          </section>
+
+          <section aria-labelledby="h-send">
+            <h2 id="h-send">Send it to your partner</h2>
+            <pre class="summary" id="summary"></pre>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" id="copy-summary">Copy summary</button>
+              <a class="btn btn-ghost" id="whatsapp" href="https://wa.me/" target="_blank" rel="noopener">Open WhatsApp</a>
+              <button type="button" class="btn btn-ghost" id="copy-link">Copy link</button>
+            </div>
+            <p class="toast" id="toast" role="status"></p>
+            <button type="button" class="text-button" id="reset">Start over with the example</button>
+          </section>
+        </div>
+
+      <section class="math" id="math" data-chrome aria-labelledby="h-math">
+        <h2 id="h-math">The math</h2>
+        <p class="formula">
+          walk-away cost = your price ÷ (1 + sales tax) × (1 − profit target) − fees − shipping − packing
+        </p>
+        <p>
+          That is the most one product can cost you and still leave the profit you asked for. A great deal is a
+          cost at or under 75% of it. The meter then adds tax and a share of delivery to the vendor's price and
+          sees which side of each line he lands on.
+        </p>
+        <p>
+          Everything runs on your phone. Nothing you type is sent anywhere, and once the page has loaded it works
+          with no signal.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-foot" data-chrome>
+      <p>Built by <a href="https://dakshdua.ca">Daksh Dua</a> in Calgary.</p>
+      <p>Free and open source. <a href="%REPO_URL%">Read the code</a>.</p>
+    </footer>
+  </body>
+</html>

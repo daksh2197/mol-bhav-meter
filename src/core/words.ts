@@ -50,7 +50,7 @@ export function askable(quote: number): number {
 
 const taxNote = (offer: Offer): string => {
   if (offer.vendorTaxRate <= 0) return '';
-  return offer.taxIncluded ? ', tax included' : ' plus tax';
+  return offer.taxIncluded ? ' with tax included' : ' plus tax';
 };
 
 /** The one line of coaching under the verdict. */

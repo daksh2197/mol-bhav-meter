@@ -75,7 +75,7 @@ describe('the coaching line', () => {
 
   it('says "tax included" when that is how he quoted it', () => {
     const allIn = { ...offer, pricePerPiece: 90, taxIncluded: true };
-    expect(advice(judge(shop, allIn), allIn, 'INR')).toContain('a piece, tax included');
+    expect(advice(judge(shop, allIn), allIn, 'INR')).toBe('He has to come down to ₹86 a piece with tax included, or you walk.');
   });
 
   it('blames delivery when delivery is the problem', () => {

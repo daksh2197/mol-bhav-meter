@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#111214"/>
+  <!-- the dial: green = great deal, grey = bargain, orange = walk away -->
+  <g fill="none" stroke-width="40">
+    <path d="M115.0 341.3 A150 150 0 0 1 256 140" stroke="#3DDC84"/>
+    <path d="M264.5 140.2 A150 150 0 0 1 340.6 166.2" stroke="#EDE8DD" stroke-opacity=".3"/>
+    <path d="M347.4 171.1 A150 150 0 0 1 397.0 341.3" stroke="#FF5A1F"/>
+  </g>
+  <!-- the needle, sitting in "bargain" -->
+  <g transform="rotate(20 256 290)">
+    <path d="M250 290 L254 148 L258 148 L262 290 L260 322 L252 322 Z" fill="#EDE8DD"/>
+  </g>
+  <circle cx="256" cy="290" r="22" fill="#22252A" stroke="#EDE8DD" stroke-opacity=".5" stroke-width="4"/>
+  <circle cx="256" cy="290" r="6" fill="#EDE8DD"/>
+</svg>
