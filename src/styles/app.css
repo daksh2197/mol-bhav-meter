@@ -181,7 +181,8 @@ main {
     align-items: start;
   }
 
-  .cluster {
+  /* "main >" makes this rule win over the plain .cluster rule further down. */
+  main > .cluster {
     grid-column: 1;
     grid-row: 1 / span 3;
     position: sticky;
@@ -211,9 +212,10 @@ main {
 }
 
 /* A short, wide window can't fit the whole instrument, so let it scroll with the page. */
-@media (min-width: 920px) and (max-height: 740px) {
-  .cluster {
-    position: static;
+@media (min-width: 920px) and (max-height: 780px) {
+  main > .cluster {
+    position: relative;
+    top: 0;
   }
 }
 
@@ -320,7 +322,7 @@ input[type='number']::-webkit-inner-spin-button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: 10px;
   margin-top: 14px;
 }
 
@@ -333,12 +335,13 @@ input[type='number']::-webkit-inner-spin-button {
 
 .seg button {
   min-height: 38px;
-  padding: 0 14px;
+  padding: 0 11px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font: 500 15px var(--body);
+  font: 500 14.5px var(--body);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -357,7 +360,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .rate input {
-  width: 4.2em;
+  width: 3.4em;
   min-height: 40px;
   padding: 0 10px;
   border: 1px solid var(--line-2);
