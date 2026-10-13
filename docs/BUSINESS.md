@@ -72,10 +72,11 @@ Code doesn't produce those sales. Distribution does. Fifty-six strangers have to
 1. Ship the free meter.
 2. Add a "Get the Vendor Desk kit" link that goes to a waitlist form. Nothing to buy yet.
 3. Put the meter in front of sellers: three short videos of real quotes going through it, plus posts in seller communities where sharing tools is welcome.
-4. Count three numbers: visits, people who typed a quote, waitlist sign-ups.
+4. Count two numbers: clicks on the links I post (a tagged short link per post) and waitlist sign-ups. The meter itself has no tracking and that isn't changing, so I count at the doors, not inside the room.
 
 **Go:** 25 or more sign-ups in a week. Build the kit and email them.
 **No-go:** fewer than 5. The tool is fine, the offer is wrong. Change the offer, not the code.
+**In between:** run one more week with a different audience before deciding.
 
 ## What I don't know yet
 
@@ -87,4 +88,4 @@ Code doesn't produce those sales. Distribution does. Fifty-six strangers have to
 
 - No ads and no selling data. The meter doesn't collect any, so there's nothing to sell.
 - Anything paid has a refund button.
-- Tax rates are typed by the user. The meter is a calculator and says so.
+- Tax rates are typed by the user. The meter is a calculator, not tax advice, and the page says so.
